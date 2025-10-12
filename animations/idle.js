@@ -67,8 +67,8 @@ export function createIdleAnimation(skeleton, hipPos, markerPositions) {
     // Use a similar angle to the walk animation's stance phase for consistency.
     const kneeBendAngle = Math.PI / 10; // 18 degrees, a noticeable but relaxed bend.
     const qKnee_Base = new THREE.Quaternion(); // Identity quaternion
-    // Use X-axis for flexion (bending backward/forward). A positive angle should bend it backward.
-    const qKnee_Bent = new THREE.Quaternion().setFromEuler(new THREE.Euler(kneeBendAngle, 0, 0));
+    // Use Z-axis for flexion to match walk animation. A negative angle should bend it backward.
+    const qKnee_Bent = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -kneeBendAngle));
     
     const kneeKeyframes = [ ...qKnee_Base.toArray(), ...qKnee_Bent.toArray(), ...qKnee_Base.toArray() ];
 
@@ -81,7 +81,7 @@ export function createIdleAnimation(skeleton, hipPos, markerPositions) {
     // Ankles counter-rotate to keep feet flat on the ground.
     // The angle should be the inverse of the knee bend angle around the same axis.
     const qAnkle_Base = new THREE.Quaternion(); // Identity quaternion
-    const qAnkle_Compensate = new THREE.Quaternion().setFromEuler(new THREE.Euler(-kneeBendAngle, 0, 0));
+    const qAnkle_Compensate = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, kneeBendAngle));
     
     const ankleKeyframes = [ ...qAnkle_Base.toArray(), ...qAnkle_Compensate.toArray(), ...qAnkle_Base.toArray() ];
 
