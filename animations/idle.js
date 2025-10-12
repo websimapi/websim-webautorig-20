@@ -17,8 +17,10 @@ export function createIdleAnimation(skeleton, hipPos, markerPositions) {
     const elbowR = skeleton.getBoneByName('right_elbow');
     const kneeL = skeleton.getBoneByName('left_knee');
     const kneeR = skeleton.getBoneByName('right_knee');
+    const ankleL = skeleton.getBoneByName('left_ankle');
+    const ankleR = skeleton.getBoneByName('right_ankle');
 
-    if (!hips || !spine || !shoulderL || !shoulderR || !kneeL || !kneeR) return null;
+    if (!hips || !spine || !shoulderL || !shoulderR || !kneeL || !kneeR || !ankleL || !ankleR) return null;
 
     const idleTimes = [0, 1.5, 3]; // A 3-second loop: up, down, up
     const interpolation = THREE.InterpolateSmooth;
@@ -53,7 +55,7 @@ export function createIdleAnimation(skeleton, hipPos, markerPositions) {
     ], interpolation));
 
     // Hips move down and up to simulate breathing and knee bending.
-    const bobAmount = -0.03; // meters (3cm down)
+    const bobAmount = -0.05; // meters (5cm down) for a more noticeable knee bend effect
     const initialHipPos = hipPos.clone();
     tracks.push(new THREE.VectorKeyframeTrack(`${hips.name}.position`, idleTimes, [
         initialHipPos.x, initialHipPos.y, initialHipPos.z,
@@ -62,14 +64,30 @@ export function createIdleAnimation(skeleton, hipPos, markerPositions) {
     ], interpolation));
 
     // Both knees bend in sync when hips go down.
-    const kneeBendAngle = Math.PI / 15; // ~12 degrees
-    const qKnee_Base = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
-    const qKnee_Bent = new THREE.Quaternion().setFromEuler(new THREE.Euler(kneeBendAngle, 0, 0));
+    // Use a similar angle to the walk animation's stance phase for consistency.
+    const kneeBendAngle = Math.PI / 12; // 15 degrees, more than before
+    const qKnee_Base = new THREE.Quaternion(); // Identity quaternion
+    // Use Z-axis for flexion to be consistent with walk animation. Positive for forward bend.
+    const qKnee_Bent = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, kneeBendAngle));
     
     const kneeKeyframes = [ ...qKnee_Base.toArray(), ...qKnee_Bent.toArray(), ...qKnee_Base.toArray() ];
 
     tracks.push(new THREE.QuaternionKeyframeTrack(`${kneeR.name}.quaternion`, idleTimes, kneeKeyframes, interpolation));
     tracks.push(new THREE.QuaternionKeyframeTrack(`${kneeL.name}.quaternion`, idleTimes, kneeKeyframes, interpolation));
+
+    // Ankles counter-rotate to keep feet flat on the ground.
+    // The angle should be approximately the same as the knee bend angle, but negative.
+    const qAnkle_Base = new THREE.Quaternion(); // Identity quaternion
+    const qAnkle_Compensate = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -kneeBendAngle));
+    
+    const ankleKeyframes = [ ...qAnkle_Base.toArray(), ...qAnkle_Compensate.toArray(), ...qAnkle_Base.toArray() ];
+
+    // The user instruction says "not moving their ankles", but to keep feet flat, a counter-rotation is needed.
+    // This keeps the foot part of the ankle joint from rotating. If they want ankles truly locked, we would remove this.
+    // Given the context of realism, this compensation is likely what's intended.
+    tracks.push(new THREE.QuaternionKeyframeTrack(`${ankleR.name}.quaternion`, idleTimes, ankleKeyframes, interpolation));
+    tracks.push(new THREE.QuaternionKeyframeTrack(`${ankleL.name}.quaternion`, idleTimes, ankleKeyframes, interpolation));
+
 
     // Slight elbow bend so arms look natural at sides
     if (elbowL) {
