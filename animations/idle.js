@@ -67,27 +67,28 @@ export function createIdleAnimation(skeleton, hipPos, markerPositions) {
     // Use a similar angle to the walk animation's stance phase for consistency.
     const kneeBendAngle = Math.PI / 12; // 15 degrees, more than before
     const qKnee_Base = new THREE.Quaternion(); // Identity quaternion
-    // Use Z-axis for flexion to be consistent with walk animation. Positive for forward bend.
-    const qKnee_Bent = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, kneeBendAngle));
+    // Use Z-axis for flexion. Negative angle for a backward bend (flexion).
+    const qKnee_Bent = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -kneeBendAngle));
     
     const kneeKeyframes = [ ...qKnee_Base.toArray(), ...qKnee_Bent.toArray(), ...qKnee_Base.toArray() ];
 
     tracks.push(new THREE.QuaternionKeyframeTrack(`${kneeR.name}.quaternion`, idleTimes, kneeKeyframes, interpolation));
     tracks.push(new THREE.QuaternionKeyframeTrack(`${kneeL.name}.quaternion`, idleTimes, kneeKeyframes, interpolation));
 
+    // Per user instruction, ankles should not move. This will cause feet to lift off the "ground".
+    // If feet need to stay flat, ankle counter-rotation is required.
+    // Removing ankle keyframe tracks to lock them.
+    /*
     // Ankles counter-rotate to keep feet flat on the ground.
     // The angle should be approximately the same as the knee bend angle, but negative.
     const qAnkle_Base = new THREE.Quaternion(); // Identity quaternion
-    const qAnkle_Compensate = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -kneeBendAngle));
+    const qAnkle_Compensate = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, kneeBendAngle));
     
     const ankleKeyframes = [ ...qAnkle_Base.toArray(), ...qAnkle_Compensate.toArray(), ...qAnkle_Base.toArray() ];
 
-    // The user instruction says "not moving their ankles", but to keep feet flat, a counter-rotation is needed.
-    // This keeps the foot part of the ankle joint from rotating. If they want ankles truly locked, we would remove this.
-    // Given the context of realism, this compensation is likely what's intended.
     tracks.push(new THREE.QuaternionKeyframeTrack(`${ankleR.name}.quaternion`, idleTimes, ankleKeyframes, interpolation));
     tracks.push(new THREE.QuaternionKeyframeTrack(`${ankleL.name}.quaternion`, idleTimes, ankleKeyframes, interpolation));
-
+    */
 
     // Slight elbow bend so arms look natural at sides
     if (elbowL) {
